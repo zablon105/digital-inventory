@@ -1,93 +1,52 @@
-import mongoose from 'mongoose';
+import { createBaseModel, mapDbRow, mapPayload } from './baseModel.js';
 
-const orderSchema = new mongoose.Schema(
-  {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    orderItems: [
-      {
-        name: { type: String, required: true },
-        qty: { type: Number, required: true, min: 1 },
-        image: { type: String, required: true },
-        price: { type: Number, required: true },
-        size: { type: String },
-        color: { type: String },
-        product: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'Product',
-          required: true,
-        },
-      },
-    ],
-    shippingAddress: {
-      fullName: { type: String, required: true },
-      address: { type: String, required: true },
-      city: { type: String, required: true },
-      postalCode: { type: String },
-      country: { type: String, required: true },
-      phone: { type: String, required: true },
-    },
-    paymentMethod: {
-      type: String,
-      required: true,
-      default: 'Simulated Gateway',
-    },
-    paymentResult: {
-      id: { type: String },
-      status: { type: String },
-      update_time: { type: String },
-      email_address: { type: String },
-    },
-    itemsPrice: {
-      type: Number,
-      required: true,
-      default: 0.0,
-    },
-    taxPrice: {
-      type: Number,
-      required: true,
-      default: 0.0,
-    },
-    shippingPrice: {
-      type: Number,
-      required: true,
-      default: 0.0,
-    },
-    totalAmount: {
-      type: Number,
-      required: true,
-      default: 0.0,
-    },
-    isPaid: {
-      type: Boolean,
-      required: true,
-      default: false,
-    },
-    paidAt: {
-      type: Date,
-    },
-    isDelivered: {
-      type: Boolean,
-      required: true,
-      default: false,
-    },
-    deliveredAt: {
-      type: Date,
-    },
-    status: {
-      type: String,
-      required: true,
-      enum: ['Pending', 'Paid', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
-      default: 'Pending',
-    },
-  },
-  {
-    timestamps: true,
-  }
-);
+const orderRowMapper = (row) => {
+  const mapped = mapDbRow(row, {
+    user_id: 'user',
+    order_items: 'orderItems',
+    shipping_address: 'shippingAddress',
+    payment_method: 'paymentMethod',
+    payment_result: 'paymentResult',
+    items_price: 'itemsPrice',
+    tax_price: 'taxPrice',
+    shipping_price: 'shippingPrice',
+    total_amount: 'totalAmount',
+    is_paid: 'isPaid',
+    paid_at: 'paidAt',
+    is_delivered: 'isDelivered',
+    delivered_at: 'deliveredAt',
+  });
+  mapped._id = row.id;
+  mapped.id = row.id;
+  return mapped;
+};
 
-const Order = mongoose.model('Order', orderSchema);
+const orderPayloadMapper = (payload) => {
+  const mapped = mapPayload(payload, {
+    _id: 'id',
+    user: 'user_id',
+    orderItems: 'order_items',
+    shippingAddress: 'shipping_address',
+    paymentMethod: 'payment_method',
+    paymentResult: 'payment_result',
+    itemsPrice: 'items_price',
+    taxPrice: 'tax_price',
+    shippingPrice: 'shipping_price',
+    totalAmount: 'total_amount',
+    isPaid: 'is_paid',
+    paidAt: 'paid_at',
+    isDelivered: 'is_delivered',
+    deliveredAt: 'delivered_at',
+  });
+  if (payload._id && !mapped.id) mapped.id = payload._id;
+  if (payload.id && !mapped.id) mapped.id = payload.id;
+  return mapped;
+};
+
+const Order = createBaseModel({
+  table: 'orders',
+  rowMapper: orderRowMapper,
+  payloadMapper: orderPayloadMapper,
+});
+
 export default Order;
